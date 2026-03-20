@@ -1,0 +1,49 @@
+OA_Backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # 应用入口，创建 FastAPI 实例，注册路由
+│   ├── config.py                # 配置类（数据库连接、JWT 密钥等）
+│   ├── database.py              # 数据库引擎、会话管理、Base 基类
+│   ├── models/                  # SQLAlchemy ORM 模型（按模块拆分）
+│   │   ├── __init__.py
+│   │   ├── user.py              # 用户模型
+│   │   ├── department.py        # 部门模型
+│   │   ├── attendance.py        # 考勤模型
+│   │   └── ...                  # 其他模型
+│   ├── schemas/                 # Pydantic 模型（请求/响应结构）
+│   │   ├── __init__.py
+│   │   ├── user.py              # 用户相关 schemas（UserCreate, UserOut 等）
+│   │   ├── department.py
+│   │   └── ...
+│   ├── crud/                    # 数据库 CRUD 操作（可选）
+│   │   ├── __init__.py
+│   │   ├── base.py              # 基础 CRUD 类
+│   │   ├── user.py              # 用户 CRUD 具体实现
+│   │   └── ...
+│   ├── services/                # 业务逻辑层（组合 CRUD、处理复杂逻辑）
+│   │   ├── __init__.py
+│   │   ├── auth_service.py      # 认证相关业务（登录、注册）
+│   │   ├── user_service.py
+│   │   └── ...
+│   ├── auth/                    # 认证相关工具
+│   │   ├── __init__.py
+│   │   ├── jwt_handler.py       # JWT 生成、验证
+│   │   ├── password.py          # 密码哈希
+│   │   └── dependencies.py      # 认证依赖（获取当前用户）
+│   ├── routers/                 # 路由层
+│   │   ├── __init__.py
+│   │   ├── auth.py              # 登录、刷新 token
+│   │   ├── users.py             # 用户管理接口
+│   │   ├── departments.py
+│   │   └── ...
+│   ├── utils/                   # 工具函数（日志、异常处理等）
+│   │   ├── logger.py
+│   │   └── exceptions.py
+│   └── middlewares/             # 自定义中间件（如请求日志、CORS）
+│       └── __init__.py
+├── tests/                       # 单元测试
+├── .env                          # 环境变量（数据库连接、密钥等）
+├── requirements.txt              # 依赖清单
+├── alembic/                      # 数据库迁移（若使用 Alembic）
+├── run.py                        # 启动脚本（可选）
+└── README.md
