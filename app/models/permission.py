@@ -1,14 +1,17 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import relationship
+from typing import List
+from sqlalchemy import String, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
-from .role import role_permission  # 导入关联表
+from app.models.role_permission import role_permission_table
 
 class Permission(Base):
-    __tablename__ = 'permissions'
+    __tablename__ = "permissions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    code = Column(String(100), unique=True, nullable=False)        # 权限代码，如 "user:delete"
-    name = Column(String(100), nullable=False)                     # 权限显示名称
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    code: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    # 多对多关系到角色
-    roles = relationship("Role", secondary=role_permission, back_populates="permissions")
+    roles: Mapped[List["Role"]] = relationship(
+        secondary=role_permission_table,
+        back_populates="permissions"
+    )

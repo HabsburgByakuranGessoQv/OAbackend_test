@@ -12,4 +12,4 @@ class Attendance(Base):
     status = Column(String(20), default="present")  # present, absent, leave, etc.
 
     # 关系：多个考勤记录属于一个用户
-    user = relationship("User", back_populates="attendances")
+    # user = relationship("User", back_populates="attendances")

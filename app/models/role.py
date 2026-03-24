@@ -1,21 +1,17 @@
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
-from sqlalchemy.orm import relationship
+from typing import List
+from sqlalchemy import String, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
-
-# 角色-权限关联表
-role_permission = Table(
-    'role_permission',
-    Base.metadata,
-    Column('role_id', Integer, ForeignKey('roles.id'), primary_key=True),
-    Column('permission_id', Integer, ForeignKey('permissions.id'), primary_key=True)
-)
+from app.models.role_permission import role_permission_table
 
 class Role(Base):
-    __tablename__ = 'roles'
+    __tablename__ = "roles"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(50), unique=True, nullable=False)          # 角色名称，如 "admin", "employee"
-    description = Column(String(200), nullable=True)                # 可选描述
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    description: Mapped[str | None] = mapped_column(String(200))
 
-    # 多对多关系到权限
-    permissions = relationship("Permission", secondary=role_permission, back_populates="roles")
+    permissions: Mapped[List["Permission"]] = relationship(
+        secondary=role_permission_table,
+        back_populates="roles"
+    )
