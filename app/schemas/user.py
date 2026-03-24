@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, field_serializer
+from typing import Optional, Any, List
 from datetime import datetime
 from app.schemas.role import RoleOut
 
@@ -22,18 +22,36 @@ class UserUpdate(BaseModel):
 class UserOut(UserBase):
     id: int
     is_active: bool
-    # role: Optional[object] = None   # 根据之前定义，可能是对象或字符串，此处可保持灵活
-    role: Optional[RoleOut] = None   # 确保是 RoleOut 类型
+    role: Any = None          # 使用 Any，通过序列化器处理
     main_dept_id: Optional[int] = None
     direct_leader_id: Optional[int] = None
     position: Optional[str] = None
     user_type: Optional[str] = None
-    is_deleted: bool
+    is_deleted: bool = False
     created_at: datetime
-    # updated_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     created_by: Optional[int] = None
     updated_by: Optional[int] = None
-    departments: List[int] = []      # 部门ID列表，用于多对多（可选）
+    departments: Any = []     # 使用 Any，通过序列化器处理
+
+    @field_serializer('role')
+    def serialize_role(self, value: Any) -> Optional[dict]:
+        """将 Role 对象转换为字典（符合 RoleOut 结构）"""
+        if value is None:
+            return None
+        # 如果已经是 RoleOut 实例，直接返回
+        if isinstance(value, RoleOut):
+            return value.model_dump()
+        # 如果是 SQLAlchemy Role 对象
+        if hasattr(value, 'id') and hasattr(value, 'name'):
+            return {"id": value.id, "name": value.name, "description": getattr(value, 'description', None)}
+        return value
+
+    @field_serializer('departments')
+    def serialize_departments(self, value: Any) -> List[int]:
+        if isinstance(value, list) and value and hasattr(value[0], 'id'):
+            return [item.id for item in value]
+        return []
 
     class Config:
         from_attributes = True

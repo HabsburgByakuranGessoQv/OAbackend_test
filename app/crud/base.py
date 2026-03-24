@@ -1,5 +1,5 @@
 from typing import TypeVar, Generic, Type, Optional, List, Dict, Any, Union
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 from app.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
@@ -10,11 +10,21 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, model: Type[ModelType]):
         self.model = model
 
-    def get(self, db: Session, id: int) -> Optional[ModelType]:
-        return db.query(self.model).filter(self.model.id == id, self.model.is_deleted == False).first()
+    def _apply_filters(self, query):
+        """默认不添加任何过滤，子类可重写添加 is_deleted 等"""
+        return query
+
+    def get(self, db: Session, id: int, options: Optional[List[Any]] = None) -> Optional[ModelType]:
+        query = db.query(self.model).filter(self.model.id == id)
+        query = self._apply_filters(query)
+        if options:
+            query = query.options(*options)
+        return query.first()
 
     def get_multi(self, db: Session, skip: int = 0, limit: int = 100) -> List[ModelType]:
-        return db.query(self.model).filter(self.model.is_deleted == False).order_by(self.model.id).offset(skip).limit(limit).all()
+        query = db.query(self.model)
+        query = self._apply_filters(query)
+        return query.order_by(self.model.id).offset(skip).limit(limit).all()
 
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = obj_in.dict()
@@ -45,10 +55,19 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.refresh(db_obj)
         return db_obj
 
-    def remove(self, db: Session, *, id: int) -> Optional[ModelType]:
-        obj = self.get(db, id=id)
-        if obj:
-            obj.is_deleted = True
-            db.commit()
-            db.refresh(obj)
-        return obj
+    def remove(
+            self,
+            db: Session,
+            *,
+            id: Optional[int] = None,
+            db_obj: Optional[ModelType] = None
+    ) -> Optional[ModelType]:
+        if db_obj is None and id is None:
+            raise ValueError("Either id or db_obj must be provided")
+        if db_obj is None:
+            db_obj = self.get(db, id=id)
+            if not db_obj:
+                return None
+        db.delete(db_obj)
+        db.commit()
+        return db_obj

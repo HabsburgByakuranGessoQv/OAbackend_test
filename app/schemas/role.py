@@ -7,4 +7,4 @@ class RoleOut(BaseModel):
     description: Optional[str] = None
 
     class Config:
-        from_attributes = True   # 允许从 SQLAlchemy 对象读取属性
+        from_attributes = True

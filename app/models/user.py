@@ -25,8 +25,7 @@ class User(Base):
     updated_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime,
-        server_default=func.now(),
-        server_onupdate=func.now()
+        onupdate=func.now()   # 使用 onupdate
     )
     # role
     role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("roles.id"))
