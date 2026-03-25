@@ -15,18 +15,15 @@ def read_current_user(current_user: User = Depends(get_current_user)) -> Any:
     return current_user
 
 
-@router.get("/", response_model=List[schemas.UserOut])
+@router.get("/all/", response_model=list[schemas.UserOut])
 def read_users(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
-) -> Any:
-    # 使用 select 预加载 role 和 departments，避免 N+1 查询
-    stmt = select(User).options(
-        selectinload(User.role),
-        selectinload(User.departments)
-    ).offset(skip).limit(limit)
+):
+    # 添加 order_by
+    stmt = select(User).order_by(User.id).offset(skip).limit(limit)
     users = db.execute(stmt).scalars().all()
     return users
 

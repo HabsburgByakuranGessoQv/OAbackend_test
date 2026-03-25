@@ -5,13 +5,14 @@ from sqlalchemy.orm import Session, selectinload
 from app import crud, schemas
 from app.database import get_db
 from app.auth.dependencies import get_current_user
+from app.models import Department
 from app.models.user import User
 
 router = APIRouter(prefix="/departments", tags=["departments"])
 
 
 # 创建部门
-@router.post("/", response_model=schemas.DepartmentOut)
+@router.post("/create", response_model=schemas.DepartmentOut)
 def create_department(
     dept_in: schemas.DepartmentCreate,
     db: Session = Depends(get_db),
@@ -27,7 +28,7 @@ def create_department(
 
 
 # 获取部门列表
-@router.get("/", response_model=List[schemas.DepartmentOut])
+@router.get("/get", response_model=List[schemas.DepartmentOut])
 def read_departments(
     skip: int = 0,
     limit: int = 100,
@@ -132,37 +133,41 @@ def add_employee(
     return user
 
 
-# 将用户从部门移除
-@router.delete("/employees/{user_id}", response_model=schemas.UserOut)
-def remove_employee(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+# 将用户从某个部门移除
+@router.delete("/departments/{dept_id}/employees/{user_id}", response_model=schemas.UserOut)
+def remove_employee_from_department(
+        dept_id: int,
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
 ):
+    # 1. 权限检查
     if not current_user.role or current_user.role.name != "admin":
         raise HTTPException(status_code=403, detail="Admin required")
 
-    # 先获取用户（需预加载关系，因为要返回）
-    stmt = select(User).where(User.id == user_id).options(
-        selectinload(User.role),
-        selectinload(User.departments)
-    )
-    user = db.execute(stmt).scalar_one_or_none()
+    # 2. 查询部门和用户（确保存在）
+    department = db.get(Department, dept_id)
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
+
+    user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 从所有部门中移除用户（这里假设 remove_employee 会移除所有部门关联，具体实现可能需调整）
-    # 根据你的 CRUD 实现，这里需要调用合适的移除方法
-    # 例如：crud.department.remove_user_from_all_depts(db, user_id)
-    # 但当前 CRUD 只有 remove_employee 按部门移除，所以可能需要遍历用户所属部门并逐个移除
-    # 这里简化：假设 remove_employee 是移除用户与某个特定部门的关系，但此接口无 dept_id，需另处理
-    # 暂按原逻辑：假设 crud.department.remove_employee 接收 user_id 并移除其所有部门关联
-    # 如果原 CRUD 没有此方法，需要补充。这里保留原调用，但注意参数可能不对
-    # 原代码：user = crud.department.remove_employee(db, user_id=user_id)
-    # 由于 remove_employee 需要 dept_id，此处逻辑需修正，此处略，待用户完善
+    # 3. 检查用户是否属于该部门
+    if department not in user.departments:
+        raise HTTPException(status_code=400, detail="User is not in this department")
 
-    # 临时方案：直接返回用户（但未真正移除关系）
-    # 建议实现一个方法 crud.department.remove_user_from_all_depts(db, user_id)
+    # 4. 移除关联（从 user.departments 中移除，SQLAlchemy 会自动处理中间表）
+    user.departments.remove(department)
+
+    # 5. 提交事务
+    db.commit()
+    # 注意：commit 后，user 对象仍持有原来的 departments 关系，但数据库已更新
+    # 如果需要返回最新状态，可以刷新对象或重新查询
+    db.refresh(user)  # 刷新后，user.departments 将不包含已删除的部门
+
+    # 6. 返回被移除的用户信息（可选）
     return user
 
 
