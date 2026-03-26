@@ -14,13 +14,15 @@ class Department(Base):
 
     # 关系
     manager: Mapped[Optional["User"]] = relationship(foreign_keys=[manager_id], post_update=True)
-    # 注意：employees 关系使用 User.main_dept_id，这里用字符串引用 User
-    employees: Mapped[List["User"]] = relationship(
-        foreign_keys="User.main_dept_id",
-        back_populates="main_dept"
-    )
-    # 多对多关系
+
+    # 唯一的多对多关系：users
     users: Mapped[List["User"]] = relationship(
         secondary=user_dept_table,
         back_populates="departments"
     )
+
+    @property
+    def user_ids(self) -> List[int]:
+        # 返回该部门所有用户的 ID 列表
+        # 注意：访问 self.users 可能触发懒加载，所以使用时最好预加载
+        return [user.id for user in self.users]

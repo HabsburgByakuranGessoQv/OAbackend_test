@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
 class DepartmentBase(BaseModel):
@@ -16,8 +16,7 @@ class DepartmentUpdate(BaseModel):
 class DepartmentOut(DepartmentBase):
     id: int
     manager_id: Optional[int] = None
-    user_ids: List[int] = []          # 多对多用户ID列表
-    employee_ids: List[int] = []      # 主要部门用户ID列表
+    # user_ids: List[int] = []   # 仅保留多对多关系下的用户 ID
+    user_ids: List[int]  # 不再给默认值
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

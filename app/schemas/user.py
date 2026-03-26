@@ -14,7 +14,6 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     is_active: Optional[bool] = None
     role: Optional[str] = None
-    main_dept_id: Optional[int] = None
     direct_leader_id: Optional[int] = None
     position: Optional[str] = None
     user_type: Optional[str] = None
